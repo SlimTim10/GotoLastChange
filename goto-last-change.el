@@ -20,6 +20,10 @@
 (provide 'goto-last-change)
 (provide 'goto-last-change-no-mark)
 
+;; Move point to last change made. If the change is an insertion, mark the entire change, otherwise do not mark.
+;; Provide numeric prefix argument to choose change, starting with 1 being the most recent.
+;; E.g., "C-3 M-x goto-last-change" will go to the 3rd last change.
+
 (defun goto-last-change (&optional num-change &optional change-list)
   (interactive "p")
   (when (eq buffer-undo-list nil)
@@ -43,6 +47,8 @@
 	((eq (cdr change-list) nil)				     ; End of the list
 	 (error "No further change information"))
 	(t (goto-last-change num-change (cdr change-list))))) ; Don't count bad elements
+
+;; Move point to last change made. No marking.
 
 (defun goto-last-change-no-mark ()
   (interactive)
