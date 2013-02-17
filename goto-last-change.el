@@ -1,4 +1,4 @@
-;;; goto-last-change.el --- Move point to (and mark) last change
+;;; goto-last-change.el --- Move point to (and mark) most recent change(s)
 ;; Copyright (C) 2013  SlimTim10
 
 ;; Author: SlimTim10 <slimtim10@gmail.com>
@@ -18,15 +18,31 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (provide 'goto-last-change)
+(provide 'goto-last-change-no-mark)
 
-(defun goto-last-change ()
-  (interactive)
-  (if (stringp (car-safe (cadr buffer-undo-list))) ; Last change was deletion
-      (goto-char (abs (cdr-safe (cadr buffer-undo-list)))) ; Go to the position of the deletion (last change)
-    (progn
-      (goto-char (abs (car-safe (cadr buffer-undo-list)))) ; Go to the start of the last change
-      (set-mark-command nil) ; Activate the mark
-      (goto-char (abs (cdr-safe (cadr buffer-undo-list))))))) ; Go to the end of the last change
+(defun goto-last-change (&optional num-change &optional change-list)
+  (interactive "p")
+  (when (eq buffer-undo-list nil)
+    (error "No change information"))
+  (when (eq change-list nil)
+    (setq change-list buffer-undo-list))
+  (when (eq num-change nil)
+    (setq num-change 0))
+  (setq num-change (abs num-change))
+  (cond ((<= num-change 1)		; Base case
+	 (when (not (eq (car change-list) nil))
+	   (error "No further change information"))
+	 (if (stringp (car-safe (cadr change-list))) ; Last change was deletion
+	     (goto-char (abs (cdr-safe (cadr change-list)))) ; Go to the position of the deletion (last change)
+	   (progn
+	     (goto-char (abs (car-safe (cadr change-list)))) ; Go to the start of the last change
+	     (set-mark-command nil)			     ; Activate the mark
+	     (goto-char (abs (cdr-safe (cadr change-list))))))) ; Go to the end of the last change
+	((eq (car change-list) nil)				; First element being nil means good element
+	 (goto-last-change (- num-change 1) (cddr change-list))) ; Count down
+	((eq (cdr change-list) nil)				     ; End of the list
+	 (error "No further change information"))
+	(t (goto-last-change num-change (cdr change-list))))) ; Don't count bad elements
 
 (defun goto-last-change-no-mark ()
   (interactive)
